@@ -1,0 +1,55 @@
+# Bibliotecas
+library(e1071)     # para SVM
+library(readr)     # para leitura de CSV
+library(Metrics)   # para calcular MAE
+
+# Ler dados
+train <- read_csv("train.csv")
+test <- read_csv("test.csv")
+
+# Tirando espaços
+names(train) <- gsub(" ", "_", names(train))
+names(test) <- gsub(" ", "_", names(test))
+
+# Converter 'Sex' em fator
+train$Sex <- as.factor(train$Sex)
+test$Sex <- as.factor(test$Sex)
+
+# Remover id
+train_model <- subset(train, select = -id)
+test_model <- subset(test, select = -id)
+
+# ----------- REGRESSÃO LINEAR -----------
+modelo <- lm(Age ~ ., data = train_model)
+summary(modelo)
+
+# Previsão treino
+pred_train_lm <- predict(modelo, newdata = train_model)
+mae_lm <- mae(train$Age, pred_train_lm)
+cat("MAE - Regressão Linear:", mae_lm, "\n")
+
+# Previsão no teste
+pred_test_lm <- predict(modelo, newdata = test_model)
+plot(train$Age, pred_train_svm,
+     xlab = "Valor Real", ylab = "Valor Predito (SVM)",
+     main = "SVM - Valor Real vs Predito")
+abline(0, 1, col = "red")
+
+# ----------- SVM -----------
+modelo_svm <- svm(Age ~ ., data = train_model)
+# Previsão treino
+pred_train_svm <- predict(modelo_svm, newdata = train_model)
+mae_svm <- mae(train$Age, pred_train_svm)
+cat("MAE - SVM:", mae_svm, "\n")
+
+# Previsão no teste
+pred_test_svm <- predict(modelo_svm, newdata = test_model)
+
+# ----------- EXPORTAR PREDIÇÕES -----------
+# Juntar com o ID do test
+resultado_lm <- data.frame(id = test$id, Age = pred_test_lm)
+resultado_svm <- data.frame(id = test$id, Age = pred_test_svm)
+
+# Salvar CSV
+write.csv(resultado_lm, "predicoes_lm.csv", row.names = FALSE)
+write.csv(resultado_svm, "predicoes_svm.csv", row.names = FALSE)
